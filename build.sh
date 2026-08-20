@@ -14,9 +14,10 @@ apt-get install -y --no-install-recommends \
   libwebp-dev libtasn1-6-dev libxkbcommon-dev libgnutls28-dev \
   libgcrypt20-dev libgpg-error-dev libwoff-dev libatspi2.0-dev \
   libxt-dev libxtst-dev libxcomposite-dev libxdamage-dev \
-  liblcms2-dev uuid-dev meson libpsl-dev libnghttp2-dev
+  liblcms2-dev uuid-dev libexpat1-dev meson libpsl-dev libnghttp2-dev
 
-pip3 install -q "meson==0.63.3"
+pip3 install -q "meson==0.63.3" "cmake==3.28.3"
+hash -r; cmake --version | head -1
 hash -r; meson --version
 
 export PKG_CONFIG_PATH=/usr/local/lib/aarch64-linux-gnu/pkgconfig:/usr/local/lib/pkgconfig:/usr/local/share/pkgconfig:${PKG_CONFIG_PATH:-}
@@ -27,7 +28,7 @@ OUT="${GITHUB_WORKSPACE:-/tmp}/out"; mkdir -p /src "$OUT" && cd /src
 curl -sfLO https://download.gnome.org/sources/glib/2.72/glib-2.72.4.tar.xz
 curl -sfLO https://download.gnome.org/sources/glib-networking/2.72/glib-networking-2.72.0.tar.xz
 curl -sfLO https://download.gnome.org/sources/libsoup/3.0/libsoup-3.0.8.tar.xz
-curl -sfLO https://www.webkitgtk.org/releases/webkitgtk-2.36.7.tar.xz
+curl -sfLO https://www.webkitgtk.org/releases/webkitgtk-2.40.2.tar.xz
 
 # glib 2.72.4
 if ! pkg-config --atleast-version=2.69.1 glib-2.0; then
@@ -48,7 +49,7 @@ if [ ! -e /usr/local/lib/aarch64-linux-gnu/libsoup-3.0.so.0 ]; then
   ninja -C _build install && ldconfig && cd /src
 fi
 # webkit 4.1
-tar -xf webkitgtk-2.36.7.tar.xz && cd webkitgtk-2.36.7
+tar -xf webkitgtk-2.40.2.tar.xz && cd webkitgtk-2.40.2
 mkdir -p _build && cd _build
 cmake -G Ninja -DCMAKE_BUILD_TYPE=release -DPORT=GTK -DUSE_SOUP2=OFF \
   -DENABLE_VIDEO=OFF -DENABLE_WEB_AUDIO=OFF -DENABLE_GAMEPAD=OFF \
