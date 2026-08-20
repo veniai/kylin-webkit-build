@@ -23,7 +23,7 @@ export PKG_CONFIG_PATH=/usr/local/lib/aarch64-linux-gnu/pkgconfig:/usr/local/lib
 echo /usr/local/lib/aarch64-linux-gnu > /etc/ld.so.conf.d/usrlocal.conf
 ldconfig
 
-mkdir -p /src /out && cd /src
+OUT="${GITHUB_WORKSPACE:-/tmp}/out"; mkdir -p /src "$OUT" && cd /src
 curl -sfLO https://download.gnome.org/sources/glib/2.72/glib-2.72.4.tar.xz
 curl -sfLO https://download.gnome.org/sources/glib-networking/2.72/glib-networking-2.72.0.tar.xz
 curl -sfLO https://download.gnome.org/sources/libsoup/3.0/libsoup-3.0.8.tar.xz
@@ -64,17 +64,20 @@ ninja install && ldconfig
 pkg-config --modversion webkit2gtk-4.1
 
 # 打包成果：自编全家桶 + 运行库闭包
-tar -cJf /out/usrlocal.tar.xz --exclude='usr/local/share' -C / usr/local
-mkdir -p /out/runtime-libs
-for libpath in $(ldd /usr/local/lib/aarch64-linux-gnu/libwebkit2gtk-4.1.so.0 /usr/local/lib/aarch64-linux-gnu/libsoup-3.0.so.0 2>/dev/null | awk '/=> \//{print $3}'); do
+tar -cJf "$OUT/usrlocal.tar.xz" --exclude='usr/local/share' -C / usr/local
+mkdir -p "$OUT/runtime-libs"
+WEBKIT_SO=$(find /usr/local -name 'libwebkit2gtk-4.1.so.0' | head -1)
+echo "webkit so: $WEBKIT_SO"
+[ -n "$WEBKIT_SO" ] || { echo "找不到 libwebkit2gtk-4.1.so.0"; exit 1; }
+for libpath in $(ldd "$WEBKIT_SO" /usr/local/lib/aarch64-linux-gnu/libsoup-3.0.so.0 2>/dev/null | awk '/=> \//{print $3}'); do
   base=$(basename $libpath)
   case "$base" in
     libc.so*|ld-linux*|libm.so*|libpthread*|libdl*|librt*|libresolv*) continue;;
   esac
-  cp -Ln $libpath /out/runtime-libs/ 2>/dev/null || true
+  cp -Ln $libpath "$OUT/runtime-libs/" 2>/dev/null || true
 done
-cp -a /usr/local/lib/aarch64-linux-gnu/*.so* /out/runtime-libs/ 2>/dev/null || true
-mkdir -p /out/gio-modules && cp -a /usr/local/lib/aarch64-linux-gnu/gio/modules/*.so /out/gio-modules/ 2>/dev/null || true
-tar -cJf /out/runtime-libs.tar.xz -C /out runtime-libs gio-modules
-ls -lh /out/
+cp -a /usr/local/lib/*.so* /usr/local/lib/aarch64-linux-gnu/*.so* "$OUT/runtime-libs/" 2>/dev/null || true 2>/dev/null || true
+mkdir -p "$OUT/gio-modules" && cp -a /usr/local/lib/aarch64-linux-gnu/gio/modules/*.so "$OUT/gio-modules/" 2>/dev/null || true
+tar -cJf "$OUT/runtime-libs.tar.xz" -C /out runtime-libs gio-modules
+ls -lh "$OUT/"
 echo "BUILD_DONE"
