@@ -78,6 +78,6 @@ for libpath in $(ldd "$WEBKIT_SO" /usr/local/lib/aarch64-linux-gnu/libsoup-3.0.s
 done
 cp -a /usr/local/lib/*.so* /usr/local/lib/aarch64-linux-gnu/*.so* "$OUT/runtime-libs/" 2>/dev/null || true 2>/dev/null || true
 mkdir -p "$OUT/gio-modules" && cp -a /usr/local/lib/aarch64-linux-gnu/gio/modules/*.so "$OUT/gio-modules/" 2>/dev/null || true
-tar -cJf "$OUT/runtime-libs.tar.xz" -C /out runtime-libs gio-modules
+tar -cJf "$OUT/runtime-libs.tar.xz" -C "$OUT" runtime-libs gio-modules
 ls -lh "$OUT/"
 echo "BUILD_DONE"
