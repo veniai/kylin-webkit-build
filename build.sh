@@ -3,8 +3,8 @@
 # 在 GitHub Actions ubuntu-*-arm 跑手的 focal 容器内原生执行
 set -ex
 export DEBIAN_FRONTEND=noninteractive LC_ALL=C
-echo "deb http://archive.ubuntu.com/ubuntu focal main universe" > /etc/apt/sources.list
-echo "deb http://archive.ubuntu.com/ubuntu focal-updates main universe" >> /etc/apt/sources.list
+echo "deb http://ports.ubuntu.com/ubuntu-ports focal main universe" > /etc/apt/sources.list
+echo "deb http://ports.ubuntu.com/ubuntu-ports focal-updates main universe" >> /etc/apt/sources.list
 apt-get update -qq
 apt-get install -y --no-install-recommends \
   build-essential cmake ninja-build python3 pkg-config gperf bison flex ruby ruby-dev gettext \

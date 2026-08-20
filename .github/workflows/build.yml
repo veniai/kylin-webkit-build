@@ -15,9 +15,11 @@ jobs:
       - name: Build webkit2gtk-4.1 for Kylin V10
         run: |
           chmod +x build.sh
-          bash build.sh 2>&1 | tail -2000
+          set -o pipefail
+          bash build.sh 2>&1 | tail -3000
       - uses: actions/upload-artifact@v4
         with:
           name: kylin-webkit41-libs
           path: out/*.tar.xz
+          if-no-files-found: error
           retention-days: 30
