@@ -13,6 +13,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Build webkit2gtk-4.1 for Kylin V10
+        shell: bash
         run: |
           chmod +x build.sh
           set -o pipefail
