@@ -64,7 +64,7 @@ ninja install && ldconfig
 pkg-config --modversion webkit2gtk-4.1
 
 # 打包成果：自编全家桶 + 运行库闭包
-tar -cJf /out/usrlocal.tar.xz -C / usr/local --exclude='usr/local/share'
+tar -cJf /out/usrlocal.tar.xz --exclude='usr/local/share' -C / usr/local
 mkdir -p /out/runtime-libs
 for libpath in $(ldd /usr/local/lib/aarch64-linux-gnu/libwebkit2gtk-4.1.so.0 /usr/local/lib/aarch64-linux-gnu/libsoup-3.0.so.0 2>/dev/null | awk '/=> \//{print $3}'); do
   base=$(basename $libpath)
