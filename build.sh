@@ -14,7 +14,7 @@ apt-get install -y --no-install-recommends \
   libwebp-dev libtasn1-6-dev libxkbcommon-dev libgnutls28-dev \
   libgcrypt20-dev libgpg-error-dev libwoff-dev libatspi2.0-dev \
   libxt-dev libxtst-dev libxcomposite-dev libxdamage-dev \
-  liblcms2-dev uuid-dev libexpat1-dev unifdef libwpe-1.0-dev libwpebackend-fdo-1.0-dev libgbm-dev libegl1-mesa-dev libgles2-mesa-dev libdrm-dev meson libpsl-dev libnghttp2-dev
+  liblcms2-dev uuid-dev libexpat1-dev unifdef bubblewrap libwpe-1.0-dev libwpebackend-fdo-1.0-dev libgbm-dev libegl1-mesa-dev libgles2-mesa-dev libdrm-dev meson libpsl-dev libnghttp2-dev
 
 pip3 install -q "meson==0.63.3" "cmake==3.28.3"
 hash -r; cmake --version | head -1
@@ -55,7 +55,7 @@ cmake -G Ninja -DCMAKE_BUILD_TYPE=release -DPORT=GTK -DUSE_SOUP2=OFF \
   -DENABLE_VIDEO=OFF -DENABLE_WEB_AUDIO=OFF -DENABLE_GAMEPAD=OFF \
   -DENABLE_ENCRYPTED_MEDIA=OFF -DENABLE_SPELLCHECK=OFF \
   -DENABLE_INTROSPECTION=OFF -DENABLE_DOCUMENTATION=OFF \
-  -DENABLE_BUBBLEWRAP_SANDBOX=OFF -DENABLE_DEVELOPER_MODE=OFF \
+  -DENABLE_DEVELOPER_MODE=OFF \
   -DENABLE_MINIBROWSER=OFF -DENABLE_API_TESTS=OFF -DENABLE_JOURNALD_LOG=OFF \
   -DUSE_GSTREAMER=OFF -DUSE_WPE_RENDERER=OFF -DUSE_LIBSECRET=OFF \
   -DUSE_LIBNOTIFY=OFF -DUSE_LIBHYPHEN=OFF -DUSE_OPENJPEG=OFF -DUSE_AVIF=OFF -DUSE_JXL=OFF \
