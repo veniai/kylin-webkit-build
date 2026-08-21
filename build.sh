@@ -50,6 +50,9 @@ if [ ! -e /usr/local/lib/aarch64-linux-gnu/libsoup-3.0.so.0 ]; then
 fi
 # webkit 4.1
 tar -xf webkitgtk-2.40.2.tar.xz && cd webkitgtk-2.40.2
+# gcc9 不支持该类型 defaulted ==：改为手写比较（语义等价）
+sed -i 's|bool operator==(const DecodingOptions&) const = default;|bool operator==(const DecodingOptions\& other) const { return m_decodingMode == other.m_decodingMode \&\& m_sizeForDrawing == other.m_sizeForDrawing; }|' Source/WebCore/platform/graphics/DecodingOptions.h
+grep -n "operator==" Source/WebCore/platform/graphics/DecodingOptions.h | head -2
 mkdir -p _build && cd _build
 cmake -G Ninja -DCMAKE_BUILD_TYPE=release -DPORT=GTK -DUSE_SOUP2=OFF \
   -DENABLE_VIDEO=OFF -DENABLE_WEB_AUDIO=OFF -DENABLE_GAMEPAD=OFF \
