@@ -14,7 +14,7 @@ apt-get install -y --no-install-recommends \
   libwebp-dev libtasn1-6-dev libxkbcommon-dev libgnutls28-dev \
   libgcrypt20-dev libgpg-error-dev libwoff-dev libatspi2.0-dev \
   libxt-dev libxtst-dev libxcomposite-dev libxdamage-dev \
-  liblcms2-dev uuid-dev libexpat1-dev unifdef bubblewrap libseccomp-dev libwpe-1.0-dev libwpebackend-fdo-1.0-dev libgbm-dev libegl1-mesa-dev libgles2-mesa-dev libdrm-dev meson libpsl-dev libnghttp2-dev
+  liblcms2-dev uuid-dev libexpat1-dev unifdef bubblewrap xdg-dbus-proxy libseccomp-dev libwpe-1.0-dev libwpebackend-fdo-1.0-dev libgbm-dev libegl1-mesa-dev libgles2-mesa-dev libdrm-dev meson libpsl-dev libnghttp2-dev
 
 pip3 install -q "meson==0.63.3" "cmake==3.28.3"
 hash -r; cmake --version | head -1
