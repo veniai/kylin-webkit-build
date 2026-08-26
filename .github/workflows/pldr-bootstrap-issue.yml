@@ -13,17 +13,36 @@ jobs:
     if: startsWith(github.event.issue.title, '[PLDR-BOOTSTRAP]')
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    env:
-      GH_TOKEN: ${{ secrets.PLDR_BOOTSTRAP_TOKEN || secrets.GH_PAT || secrets.PERSONAL_ACCESS_TOKEN || secrets.PAT || secrets.REPO_TOKEN || secrets.GH_TOKEN || github.token }}
     steps:
-      - name: Create repository
+      - name: Select token and create repository
         id: create
+        env:
+          TOKEN_REPO_DISPATCH: ${{ secrets.REPO_DISPATCH_TOKEN }}
+          TOKEN_PLDR: ${{ secrets.PLDR_BOOTSTRAP_TOKEN }}
+          TOKEN_GH_PAT: ${{ secrets.GH_PAT }}
+          TOKEN_PERSONAL: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+          TOKEN_PAT: ${{ secrets.PAT }}
+          TOKEN_REPO: ${{ secrets.REPO_TOKEN }}
+          TOKEN_GH: ${{ secrets.GH_TOKEN }}
+          TOKEN_FALLBACK: ${{ github.token }}
         shell: bash
         run: |
           set +e
+          token_source="github.token"
+          GH_TOKEN="$TOKEN_FALLBACK"
+          if [ -n "${TOKEN_REPO_DISPATCH:-}" ]; then GH_TOKEN="$TOKEN_REPO_DISPATCH"; token_source="REPO_DISPATCH_TOKEN";
+          elif [ -n "${TOKEN_PLDR:-}" ]; then GH_TOKEN="$TOKEN_PLDR"; token_source="PLDR_BOOTSTRAP_TOKEN";
+          elif [ -n "${TOKEN_GH_PAT:-}" ]; then GH_TOKEN="$TOKEN_GH_PAT"; token_source="GH_PAT";
+          elif [ -n "${TOKEN_PERSONAL:-}" ]; then GH_TOKEN="$TOKEN_PERSONAL"; token_source="PERSONAL_ACCESS_TOKEN";
+          elif [ -n "${TOKEN_PAT:-}" ]; then GH_TOKEN="$TOKEN_PAT"; token_source="PAT";
+          elif [ -n "${TOKEN_REPO:-}" ]; then GH_TOKEN="$TOKEN_REPO"; token_source="REPO_TOKEN";
+          elif [ -n "${TOKEN_GH:-}" ]; then GH_TOKEN="$TOKEN_GH"; token_source="GH_TOKEN";
+          fi
+          export GH_TOKEN
+          echo "token_source=$token_source" >> "$GITHUB_OUTPUT"
+
           gh api repos/veniai/PLDR > /tmp/existing.json 2>/tmp/existing.err
-          exists_rc=$?
-          if [ "$exists_rc" -eq 0 ]; then
+          if [ "$?" -eq 0 ]; then
             echo "result=already_exists" >> "$GITHUB_OUTPUT"
             echo "detail=https://github.com/veniai/PLDR" >> "$GITHUB_OUTPUT"
             exit 0
@@ -38,8 +57,7 @@ jobs:
           rc=$?
           if [ "$rc" -eq 0 ]; then
             echo "result=created" >> "$GITHUB_OUTPUT"
-            url=$(jq -r '.html_url' /tmp/pldr-create.json)
-            echo "detail=$url" >> "$GITHUB_OUTPUT"
+            echo "detail=$(jq -r '.html_url' /tmp/pldr-create.json)" >> "$GITHUB_OUTPUT"
           else
             echo "result=failed" >> "$GITHUB_OUTPUT"
             detail=$(head -20 /tmp/pldr-create.err | tr '\n' ' ' | sed 's/%/%25/g; s/\r/%0D/g; s/\n/%0A/g')
@@ -49,9 +67,11 @@ jobs:
 
       - name: Report result
         env:
+          GH_TOKEN: ${{ github.token }}
           RESULT: ${{ steps.create.outputs.result }}
           DETAIL: ${{ steps.create.outputs.detail }}
+          TOKEN_SOURCE: ${{ steps.create.outputs.token_source }}
           ISSUE_URL: ${{ github.event.issue.html_url }}
         shell: bash
         run: |
-          gh issue comment "$ISSUE_URL" --body "PLDR bootstrap result: **$RESULT**\n\n$DETAIL"
+          gh issue comment "$ISSUE_URL" --body "PLDR bootstrap result: **$RESULT**\n\nToken source: \`$TOKEN_SOURCE\`\n\n$DETAIL"
