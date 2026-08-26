@@ -4,16 +4,13 @@ on:
   push:
     branches: [master]
   workflow_dispatch:
-  issues:
-    types: [opened]
 
 permissions:
   contents: read
-  issues: write
 
 jobs:
   build:
-    if: ${{ github.event_name != 'issues' }}
+    if: ${{ !contains(github.event.head_commit.message, '[PLDR-BOOTSTRAP]') }}
     runs-on: ubuntu-24.04-arm
     container:
       image: ubuntu:20.04
@@ -35,13 +32,13 @@ jobs:
           retention-days: 30
 
   bootstrap-pldr:
-    if: ${{ github.event_name == 'issues' && startsWith(github.event.issue.title, '[PLDR-BOOTSTRAP]') }}
+    if: ${{ contains(github.event.head_commit.message, '[PLDR-BOOTSTRAP]') }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - name: Create repository
-        id: create
+      - name: Create PLDR repository
         env:
+          TOKEN_REPO_DISPATCH: ${{ secrets.REPO_DISPATCH_TOKEN }}
           TOKEN_PLDR: ${{ secrets.PLDR_BOOTSTRAP_TOKEN }}
           TOKEN_GH_PAT: ${{ secrets.GH_PAT }}
           TOKEN_PERSONAL: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
@@ -52,38 +49,49 @@ jobs:
         shell: bash
         run: |
           set +e
-          export GH_TOKEN="${TOKEN_PLDR:-${TOKEN_GH_PAT:-${TOKEN_PERSONAL:-${TOKEN_PAT:-${TOKEN_REPO:-${TOKEN_GH:-$TOKEN_FALLBACK}}}}}}}"
+          result_file="pldr-bootstrap-result.txt"
+          echo "attempted_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)" > "$result_file"
+
+          token_source="github.token"
+          GH_TOKEN="$TOKEN_FALLBACK"
+          if [ -n "${TOKEN_REPO_DISPATCH:-}" ]; then GH_TOKEN="$TOKEN_REPO_DISPATCH"; token_source="REPO_DISPATCH_TOKEN";
+          elif [ -n "${TOKEN_PLDR:-}" ]; then GH_TOKEN="$TOKEN_PLDR"; token_source="PLDR_BOOTSTRAP_TOKEN";
+          elif [ -n "${TOKEN_GH_PAT:-}" ]; then GH_TOKEN="$TOKEN_GH_PAT"; token_source="GH_PAT";
+          elif [ -n "${TOKEN_PERSONAL:-}" ]; then GH_TOKEN="$TOKEN_PERSONAL"; token_source="PERSONAL_ACCESS_TOKEN";
+          elif [ -n "${TOKEN_PAT:-}" ]; then GH_TOKEN="$TOKEN_PAT"; token_source="PAT";
+          elif [ -n "${TOKEN_REPO:-}" ]; then GH_TOKEN="$TOKEN_REPO"; token_source="REPO_TOKEN";
+          elif [ -n "${TOKEN_GH:-}" ]; then GH_TOKEN="$TOKEN_GH"; token_source="GH_TOKEN";
+          fi
+          export GH_TOKEN
+          echo "token_source=$token_source" >> "$result_file"
 
           gh api repos/veniai/PLDR > /tmp/existing.json 2>/tmp/existing.err
           if [ "$?" -eq 0 ]; then
-            echo "result=already_exists" >> "$GITHUB_OUTPUT"
-            echo "detail=https://github.com/veniai/PLDR" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-
-          gh api --method POST user/repos \
-            -f name='PLDR' \
-            -f description='Evidence-centered open-source intelligence workbench' \
-            -F private=true \
-            -F auto_init=true \
-            > /tmp/pldr-create.json 2> /tmp/pldr-create.err
-          rc=$?
-          if [ "$rc" -eq 0 ]; then
-            echo "result=created" >> "$GITHUB_OUTPUT"
-            echo "detail=$(jq -r '.html_url' /tmp/pldr-create.json)" >> "$GITHUB_OUTPUT"
+            echo "create_exit_code=0" >> "$result_file"
+            echo "status=already_exists" >> "$result_file"
           else
-            echo "result=failed" >> "$GITHUB_OUTPUT"
-            detail=$(head -20 /tmp/pldr-create.err | tr '\n' ' ')
-            echo "detail=$detail" >> "$GITHUB_OUTPUT"
+            gh api --method POST user/repos \
+              -f name='PLDR' \
+              -f description='Evidence-centered open-source intelligence workbench' \
+              -F private=true \
+              -F auto_init=true \
+              > /tmp/pldr-create.json 2> /tmp/pldr-create.err
+            rc=$?
+            echo "create_exit_code=$rc" >> "$result_file"
+            if [ "$rc" -eq 0 ]; then
+              echo "status=created" >> "$result_file"
+              echo "url=$(jq -r '.html_url' /tmp/pldr-create.json)" >> "$result_file"
+            else
+              echo "status=failed" >> "$result_file"
+              head -30 /tmp/pldr-create.err >> "$result_file"
+            fi
           fi
+          cat "$result_file"
           exit 0
 
-      - name: Report result
-        env:
-          GH_TOKEN: ${{ github.token }}
-          RESULT: ${{ steps.create.outputs.result }}
-          DETAIL: ${{ steps.create.outputs.detail }}
-          ISSUE_URL: ${{ github.event.issue.html_url }}
-        shell: bash
-        run: |
-          gh issue comment "$ISSUE_URL" --body "PLDR bootstrap result: **$RESULT**\n\n$DETAIL"
+      - name: Upload bootstrap result
+        uses: actions/upload-artifact@v4
+        with:
+          name: pldr-bootstrap-result
+          path: pldr-bootstrap-result.txt
+          retention-days: 1
