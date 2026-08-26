@@ -2,10 +2,7 @@ name: Bootstrap PLDR repository
 
 on:
   push:
-    branches:
-      - automation/pldr-bootstrap
-    paths:
-      - .github/workflows/pldr-bootstrap.yml
+    branches: ["automation/pldr-bootstrap"]
 
 permissions:
   contents: write
@@ -13,6 +10,7 @@ permissions:
 jobs:
   create-repository:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     env:
       GH_TOKEN: ${{ github.token }}
     steps:
