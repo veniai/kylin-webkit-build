@@ -2,6 +2,7 @@ name: PLDR bootstrap isolated
 
 on:
   push:
+  pull_request:
 
 permissions:
   contents: write
@@ -40,4 +41,4 @@ jobs:
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add "$result_file"
           git commit -m 'chore: record isolated PLDR bootstrap result [skip ci]' || true
-          git push origin HEAD:${GITHUB_REF_NAME}
+          git push origin HEAD:${GITHUB_HEAD_REF:-$GITHUB_REF_NAME}
