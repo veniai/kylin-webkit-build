@@ -1,9 +1,9 @@
 name: One-time create PLDR repository
 
 on:
-  push:
-    branches: ["master"]
-    paths: [".github/workflows/tmp_create_pldr.yml"]
+  workflow_run:
+    workflows: ["Fetch Duanlian Chinese source snapshots"]
+    types: [completed]
 
 permissions:
   contents: write
@@ -16,6 +16,8 @@ jobs:
       GH_TOKEN: ${{ secrets.PLDR_BOOTSTRAP_TOKEN || secrets.GH_PAT || secrets.PERSONAL_ACCESS_TOKEN || secrets.PAT || secrets.REPO_TOKEN || secrets.GH_TOKEN || github.token }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: master
 
       - name: Create private PLDR repository
         shell: bash
@@ -23,6 +25,7 @@ jobs:
           set +e
           result_file="pldr-create-result.txt"
           echo "attempted_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)" > "$result_file"
+          echo "trigger_run=${{ github.event.workflow_run.id }}" >> "$result_file"
           if gh api repos/veniai/PLDR >/tmp/pldr-existing.json 2>/tmp/pldr-existing.err; then
             echo "status=already_exists" >> "$result_file"
             grep -o '"html_url":"[^"]*"' /tmp/pldr-existing.json | head -1 >> "$result_file"
