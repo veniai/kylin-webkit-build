@@ -2,16 +2,20 @@ name: PLDR bootstrap isolated
 
 on:
   push:
+    branches: ["automation/pldr-bootstrap"]
+    paths: [".github/workflows/pldr-bootstrap-arm.yml"]
 
 permissions:
   contents: write
 
 jobs:
   bootstrap:
-    runs-on: ubuntu-24.04-arm
+    runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: automation/pldr-bootstrap
 
       - name: Attempt PLDR repository creation
         env:
