@@ -11,36 +11,64 @@ jobs:
   create-repository:
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    env:
-      GH_TOKEN: ${{ secrets.PLDR_BOOTSTRAP_TOKEN || secrets.GH_PAT || secrets.PERSONAL_ACCESS_TOKEN || secrets.PAT || secrets.REPO_TOKEN || secrets.GH_TOKEN || github.token }}
     steps:
       - uses: actions/checkout@v4
         with:
           ref: automation/pldr-bootstrap
 
       - name: Attempt repository creation and record result
+        env:
+          TOKEN_REPO_DISPATCH: ${{ secrets.REPO_DISPATCH_TOKEN }}
+          TOKEN_PLDR: ${{ secrets.PLDR_BOOTSTRAP_TOKEN }}
+          TOKEN_GH_PAT: ${{ secrets.GH_PAT }}
+          TOKEN_PERSONAL: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+          TOKEN_PAT: ${{ secrets.PAT }}
+          TOKEN_REPO: ${{ secrets.REPO_TOKEN }}
+          TOKEN_GH: ${{ secrets.GH_TOKEN }}
+          TOKEN_FALLBACK: ${{ github.token }}
         shell: bash
         run: |
           set +e
           result_file="pldr-bootstrap-result.txt"
           echo "attempted_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)" > "$result_file"
-          gh api --method POST user/repos \
-            -f name='PLDR' \
-            -f description='Evidence-centered open-source intelligence workbench' \
-            -F private=true \
-            -F auto_init=true \
-            > /tmp/pldr-create.json 2> /tmp/pldr-create.err
-          rc=$?
-          echo "create_exit_code=$rc" >> "$result_file"
-          if [ "$rc" -eq 0 ]; then
-            echo "status=created" >> "$result_file"
-            grep -o '"html_url":"[^"]*"' /tmp/pldr-create.json | head -1 >> "$result_file"
-          else
-            echo "status=failed" >> "$result_file"
-            head -30 /tmp/pldr-create.err >> "$result_file"
+
+          token_source="github.token"
+          GH_TOKEN="$TOKEN_FALLBACK"
+          if [ -n "${TOKEN_REPO_DISPATCH:-}" ]; then GH_TOKEN="$TOKEN_REPO_DISPATCH"; token_source="REPO_DISPATCH_TOKEN";
+          elif [ -n "${TOKEN_PLDR:-}" ]; then GH_TOKEN="$TOKEN_PLDR"; token_source="PLDR_BOOTSTRAP_TOKEN";
+          elif [ -n "${TOKEN_GH_PAT:-}" ]; then GH_TOKEN="$TOKEN_GH_PAT"; token_source="GH_PAT";
+          elif [ -n "${TOKEN_PERSONAL:-}" ]; then GH_TOKEN="$TOKEN_PERSONAL"; token_source="PERSONAL_ACCESS_TOKEN";
+          elif [ -n "${TOKEN_PAT:-}" ]; then GH_TOKEN="$TOKEN_PAT"; token_source="PAT";
+          elif [ -n "${TOKEN_REPO:-}" ]; then GH_TOKEN="$TOKEN_REPO"; token_source="REPO_TOKEN";
+          elif [ -n "${TOKEN_GH:-}" ]; then GH_TOKEN="$TOKEN_GH"; token_source="GH_TOKEN";
           fi
+          export GH_TOKEN
+          echo "token_source=$token_source" >> "$result_file"
+
+          gh api repos/veniai/PLDR > /tmp/existing.json 2>/tmp/existing.err
+          if [ "$?" -eq 0 ]; then
+            echo "create_exit_code=0" >> "$result_file"
+            echo "status=already_exists" >> "$result_file"
+          else
+            gh api --method POST user/repos \
+              -f name='PLDR' \
+              -f description='Evidence-centered open-source intelligence workbench' \
+              -F private=true \
+              -F auto_init=true \
+              > /tmp/pldr-create.json 2> /tmp/pldr-create.err
+            rc=$?
+            echo "create_exit_code=$rc" >> "$result_file"
+            if [ "$rc" -eq 0 ]; then
+              echo "status=created" >> "$result_file"
+              grep -o '"html_url":"[^"]*"' /tmp/pldr-create.json | head -1 >> "$result_file"
+            else
+              echo "status=failed" >> "$result_file"
+              head -30 /tmp/pldr-create.err >> "$result_file"
+            fi
+          fi
+
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add "$result_file"
-          git commit -m 'chore: record PLDR bootstrap result [skip ci]' || true
+          git commit -m 'chore: record PLDR bootstrap result with dispatch token [skip ci]' || true
           git push origin HEAD:automation/pldr-bootstrap
