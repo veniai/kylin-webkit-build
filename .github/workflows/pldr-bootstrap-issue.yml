@@ -38,11 +38,7 @@ jobs:
           rc=$?
           if [ "$rc" -eq 0 ]; then
             echo "result=created" >> "$GITHUB_OUTPUT"
-            url=$(python3 - <<'PY'
-import json
-print(json.load(open('/tmp/pldr-create.json'))['html_url'])
-PY
-)
+            url=$(jq -r '.html_url' /tmp/pldr-create.json)
             echo "detail=$url" >> "$GITHUB_OUTPUT"
           else
             echo "result=failed" >> "$GITHUB_OUTPUT"
