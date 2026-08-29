@@ -1,0 +1,46 @@
+name: Bootstrap PLDR repository
+
+on:
+  push:
+    branches: ["automation/pldr-bootstrap"]
+
+permissions:
+  contents: write
+
+jobs:
+  create-repository:
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 10
+    env:
+      GH_TOKEN: ${{ secrets.PLDR_BOOTSTRAP_TOKEN || secrets.GH_PAT || secrets.PERSONAL_ACCESS_TOKEN || secrets.PAT || secrets.REPO_TOKEN || secrets.GH_TOKEN || github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: automation/pldr-bootstrap
+
+      - name: Attempt repository creation and record result
+        shell: bash
+        run: |
+          set +e
+          result_file="pldr-bootstrap-result.txt"
+          echo "attempted_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)" > "$result_file"
+          gh api --method POST user/repos \
+            -f name='PLDR' \
+            -f description='Evidence-centered open-source intelligence workbench' \
+            -F private=true \
+            -F auto_init=false \
+            > /tmp/pldr-create.json 2> /tmp/pldr-create.err
+          rc=$?
+          echo "create_exit_code=$rc" >> "$result_file"
+          if [ "$rc" -eq 0 ]; then
+            echo "status=created" >> "$result_file"
+            grep -o '"html_url":"[^"]*"' /tmp/pldr-create.json | head -1 >> "$result_file"
+          else
+            echo "status=failed" >> "$result_file"
+            head -30 /tmp/pldr-create.err >> "$result_file"
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$result_file"
+          git commit -m 'chore: record PLDR bootstrap result [skip ci]' || true
+          git push origin HEAD:automation/pldr-bootstrap
